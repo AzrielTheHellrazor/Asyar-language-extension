@@ -1,0 +1,178 @@
+{
+  "id": "org.asyar.polyglot-dict",
+  "name": "Polyglot Sözlük & Almanca",
+  "version": "1.0.0",
+  "description": "Üç dilli (DE ↔ EN ↔ TR) akıllı sözlük, renk kodlu Almanca Artikel (der/die/das) & fiil çekimi kartları, artikel vurgulu örnek cümleler ve Flashcard kelime defteri.",
+  "author": "AzrielTheHellrazor",
+  "icon": "🇩🇪",
+  "type": "extension",
+  "asyarSdk": "^4.15.0",
+  "background": {
+    "main": "worker.js"
+  },
+  "searchable": true,
+  "permissions": [
+    "network",
+    "selection:read",
+    "clipboard:read",
+    "clipboard:write",
+    "notifications:send",
+    "storage:read",
+    "storage:write",
+    "cache:read",
+    "cache:write",
+    "tools:register",
+    "extension:invoke"
+  ],
+  "preferences": [
+    {
+      "name": "defaultFocus",
+      "type": "dropdown",
+      "title": "Varsayılan Görünüm Odağı",
+      "description": "Arama yapıldığında hangi dil/gramer detaylarının önceliklendirileceğini seçin.",
+      "default": "all",
+      "data": [
+        {
+          "value": "all",
+          "title": "Üç Dilli Tam Görünüm (DE + EN + TR)"
+        },
+        {
+          "value": "de",
+          "title": "Almanca Gramer & Artikel Odaklı"
+        },
+        {
+          "value": "en",
+          "title": "İngilizce Sözlük Odaklı"
+        }
+      ]
+    },
+    {
+      "name": "aiProvider",
+      "type": "dropdown",
+      "title": "Opsiyonel AI Sağlayıcısı (Ek Örnek & CEFR Analizi)",
+      "description": "API anahtarı girildiğinde ek örnek cümle ve gramer ipuçları üretir.",
+      "default": "gemini",
+      "data": [
+        {
+          "value": "gemini",
+          "title": "Google Gemini (gemini-2.5-flash)"
+        },
+        {
+          "value": "openai",
+          "title": "OpenAI (gpt-4o-mini)"
+        }
+      ]
+    },
+    {
+      "name": "aiApiKey",
+      "type": "password",
+      "title": "Opsiyonel AI API Anahtarı",
+      "description": "Boş bırakılırsa Wiktionary + Google Zengin Sözlük + Free Dictionary ile sıfır kurulumla çalışır."
+    },
+    {
+      "name": "autoSaveLookups",
+      "type": "checkbox",
+      "title": "Aranan kelimeleri otomatik geçmişe kaydet",
+      "default": true
+    }
+  ],
+  "commands": [
+    {
+      "id": "lookup",
+      "name": "Polyglot Sözlük & Çeviri",
+      "description": "Almanca, İngilizce ve Türkçe karşılıkları, der/die/das artikelleri, fiil çekimlerini ve örnek cümleleri görüntüle.",
+      "icon": "🇩🇪",
+      "mode": "view",
+      "component": "PolyglotView",
+      "searchBarAccessory": {
+        "type": "dropdown",
+        "default": "all",
+        "options": [
+          {
+            "value": "all",
+            "title": "Tümü (DE · EN · TR)"
+          },
+          {
+            "value": "de",
+            "title": "Almanca Gramer Odaklı"
+          },
+          {
+            "value": "en",
+            "title": "İngilizce Sözlük Odaklı"
+          }
+        ]
+      }
+    },
+    {
+      "id": "selection-lookup",
+      "name": "Seçili Kelimeyi Sözlükte Aç",
+      "description": "Öndeki uygulamada seçili olan kelime veya cümleyi üç dilli sözlük ve gramer kartında aç.",
+      "icon": "🔍",
+      "mode": "view",
+      "component": "PolyglotView"
+    },
+    {
+      "id": "vocab",
+      "name": "Kelime Defterim (Vocabulary)",
+      "description": "Kaydettiğin Almanca ve İngilizce kelimeleri artikelleri ve örnek cümleleriyle incele.",
+      "icon": "📚",
+      "mode": "view",
+      "component": "VocabView",
+      "searchBarAccessory": {
+        "type": "dropdown",
+        "default": "all",
+        "options": [
+          {
+            "value": "all",
+            "title": "Tüm Kelimeler"
+          },
+          {
+            "value": "der",
+            "title": "der (Maskulin / Eril)"
+          },
+          {
+            "value": "die",
+            "title": "die (Feminin / Dişil)"
+          },
+          {
+            "value": "das",
+            "title": "das (Neutral / Nötr)"
+          },
+          {
+            "value": "verb",
+            "title": "Fiiller (Verben)"
+          },
+          {
+            "value": "favorites",
+            "title": "Favoriler ⭐"
+          }
+        ]
+      }
+    },
+    {
+      "id": "flashcards",
+      "name": "Kelime Tekrarı (Flashcards)",
+      "description": "Kaydettiğin kelimeleri artikel renkleri ve örnek cümlelerle interaktif kartlarla tekrar et.",
+      "icon": "🎴",
+      "mode": "view",
+      "component": "FlashcardView"
+    }
+  ],
+  "tools": [
+    {
+      "id": "polyglot_lookup",
+      "name": "Polyglot Dictionary & German Grammar Lookup",
+      "description": "Look up any word or phrase in German, English, or Turkish. Returns translations in all 3 languages (DE, EN, TR), German noun article (der/die/das) & plural form, verb conjugations, and bilingual example sentences.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The word or phrase to look up in DE, EN, or TR."
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  ]
+}

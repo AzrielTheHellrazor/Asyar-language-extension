@@ -1,0 +1,23 @@
+{
+  "name": "org.asyar.polyglot-dict",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Trilingual (DE/EN/TR) Dictionary, German Grammar & Article Trainer, and Vocabulary Flashcards Extension for Asyar",
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "asyar-sdk": "^4.15.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "svelte": "^5.0.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
+  }
+}
