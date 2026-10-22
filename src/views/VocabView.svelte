@@ -6,7 +6,7 @@
     removeVocabItem,
     toggleVocabFavorite,
     filterVocabItems,
-    seedStarterGermanVocabIfEmpty
+    purgeStarterVocabOnce
   } from "../store/vocab";
   import { segmentSentenceWithArticleHighlights } from "../engine/wiktionary";
   import type {
@@ -25,6 +25,7 @@
     searchBarAccessory,
     extensionId,
     embedded = false,
+    onCountChange,
     onOpenWord,
     onStartCards
   } = $props();
@@ -54,8 +55,8 @@
 
   async function refresh() {
     try {
-      const seeded = await seedStarterGermanVocabIfEmpty(storage);
-      items = seeded.length > 0 ? seeded : await listVocabItems(storage);
+      items = await purgeStarterVocabOnce(storage);
+      onCountChange?.(items.length);
     } catch {
       // ignore
     }
@@ -65,8 +66,10 @@
     try {
       await removeVocabItem(storage, id);
       items = await listVocabItems(storage);
+      onCountChange?.(items.length);
     } catch {
       items = items.filter((i) => i.id !== id);
+      onCountChange?.(items.length);
     }
   }
 
@@ -132,7 +135,9 @@
 
   {#if filtered.length === 0}
     <div class="empty-state">
-      Bu filtreye uygun kayıtlı kelime bulunamadı.
+      {items.length === 0
+        ? "Henüz kaydedilmiş kelime yok. Sözlükten ★ Kaydet ile kelime ekleyebilirsiniz."
+        : "Bu filtreye uygun kayıtlı kelime bulunamadı."}
     </div>
   {:else}
     <div class="vocab-list">

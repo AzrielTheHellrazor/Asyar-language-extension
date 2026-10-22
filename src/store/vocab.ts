@@ -672,3 +672,25 @@ export async function seedStarterGermanVocabIfEmpty(
 
   return listVocabItems(storage);
 }
+
+export async function purgeStarterVocabOnce(
+  storage: StorageLike
+): Promise<VocabItem[]> {
+  const purged = await storage.get("vocab:starter_purged");
+  if (!purged) {
+    const starterIds = [
+      "buch",
+      "schluessel",
+      "entscheidung",
+      "sprechen",
+      "erfahrung",
+      "verstehen"
+    ];
+    for (const id of starterIds) {
+      await storage.delete(`${VOCAB_ITEM_PREFIX}${id}`);
+    }
+    await storage.delete(VOCAB_SEEDED_KEY);
+    await storage.set("vocab:starter_purged", "true");
+  }
+  return listVocabItems(storage);
+}

@@ -2,9 +2,8 @@
   import { onMount } from "svelte";
   import "../styles/awwwards.css";
   import {
-    listVocabItems,
     recordFlashcardReview,
-    seedStarterGermanVocabIfEmpty
+    purgeStarterVocabOnce
   } from "../store/vocab";
   import type { VocabItem, ArticleGender } from "../types";
 
@@ -70,8 +69,7 @@
   onMount(() => {
     (async () => {
       try {
-        const seeded = await seedStarterGermanVocabIfEmpty(storage);
-        deck = seeded.length > 0 ? seeded : await listVocabItems(storage);
+        deck = await purgeStarterVocabOnce(storage);
       } catch {
         // ignore
       }
@@ -134,7 +132,9 @@
   </div>
 
   {#if !currentCard}
-    <div class="card-box">Yükleniyor…</div>
+    <div class="card-box">
+      Henüz kaydedilmiş kelime yok. Kartlarla çalışmak için sözlükten ★ Kaydet ile kelime ekleyin.
+    </div>
   {:else}
     <div class="card-box {revealed && currentCard.article ? `card-box--${currentCard.article}` : ''}">
       <div class="card-meta">

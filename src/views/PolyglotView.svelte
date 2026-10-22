@@ -6,13 +6,12 @@
   import {
     saveWordToVocab,
     listVocabItems,
-    seedStarterGermanVocabIfEmpty
+    purgeStarterVocabOnce
   } from "../store/vocab";
   import VocabView from "./VocabView.svelte";
   import FlashcardView from "./FlashcardView.svelte";
   import type {
     PolyglotEntry,
-    ArticleGender,
     HighlightSegment
   } from "../types";
 
@@ -30,105 +29,9 @@
     initialMode = "lookup"
   } = $props();
 
-  const DEFAULT_ENTRY: PolyglotEntry = {
-    query: "das Buch",
-    detectedLang: "de",
-    timestamp: Date.now(),
-    translations: {
-      de: {
-        lang: "de",
-        primaryText: "das Buch",
-        alternatives: ["das Werk", "der Band", "die Lektüre"],
-        pronunciation: "buːx"
-      },
-      en: {
-        lang: "en",
-        primaryText: "book",
-        alternatives: ["volume", "work", "publication"],
-        pronunciation: "bʊk"
-      },
-      tr: {
-        lang: "tr",
-        primaryText: "kitap",
-        alternatives: ["eser", "cilt", "yapıt"]
-      }
-    },
-    germanGrammar: {
-      word: "Buch",
-      pos: "noun",
-      cefrLevel: "A1",
-      ipa: "buːx",
-      noun: {
-        article: "das",
-        genderLabel: "Neutral (Nötr)",
-        singular: "Buch",
-        plural: "die Bücher",
-        genitive: "des Buches"
-      },
-      grammarTip:
-        "Nötr (das) isimdir; çoğulda kök ünlüsü Umlaut alır ve -er eki gelir: das Buch → die Bücher.",
-      synonyms: ["Werk", "Band"]
-    },
-    englishDetails: {
-      word: "book",
-      ipa: "/bʊk/",
-      definitions: ["A written or printed work consisting of pages bound in covers."],
-      synonyms: ["volume", "tome"]
-    },
-    meanings: [],
-    examples: [
-      {
-        id: "buch-1",
-        language: "de",
-        sentence: "Ich lese jeden Abend ein spannendes Buch auf Deutsch.",
-        translationTr: "Her akşam Almanca heyecan verici bir kitap okuyorum.",
-        translationEnOrDe: "I read an exciting book in German every evening.",
-        articleUsed: "das",
-        highlightedSegments: [
-          { text: "Ich lese jeden Abend " },
-          { text: "ein", isArticle: true, articleGender: "das" },
-          { text: " spannendes " },
-          { text: "Buch", isTargetWord: true, articleGender: "das" },
-          { text: " auf Deutsch." }
-        ],
-        source: "curated"
-      },
-      {
-        id: "buch-2",
-        language: "de",
-        sentence: "Die neuen Bücher liegen schon auf dem Schreibtisch.",
-        translationTr: "Yeni kitaplar şimdiden çalışma masasının üzerinde duruyor.",
-        translationEnOrDe: "The new books are already on the desk.",
-        articleUsed: "das",
-        highlightedSegments: [
-          { text: "Die", isArticle: true, articleGender: "das" },
-          { text: " neuen " },
-          { text: "Bücher", isTargetWord: true, articleGender: "das" },
-          { text: " liegen schon auf " },
-          { text: "dem", isArticle: true, articleGender: "der" },
-          { text: " Schreibtisch." }
-        ],
-        source: "curated"
-      }
-    ],
-    synonyms: {
-      de: ["das Werk", "der Band"],
-      en: ["volume", "publication"]
-    }
-  };
-
-  const QUICK_WORDS = [
-    { label: "das Buch", gender: "das" as ArticleGender },
-    { label: "der Schlüssel", gender: "der" as ArticleGender },
-    { label: "die Entscheidung", gender: "die" as ArticleGender },
-    { label: "verstehen" },
-    { label: "sprechen" },
-    { label: "experience" }
-  ];
-
   let activeTab = $state<"dict" | "vocab" | "cards">("dict");
-  let query = $state("das Buch");
-  let entry = $state<PolyglotEntry>(DEFAULT_ENTRY);
+  let query = $state("");
+  let entry = $state<PolyglotEntry | null>(null);
   let loading = $state(false);
   let errorMsg = $state<string | null>(null);
   let savedCount = $state(0);
@@ -142,7 +45,7 @@
     if (ex.highlightedSegments && ex.highlightedSegments.length > 0) {
       return ex.highlightedSegments;
     }
-    if (ex.language === "de") {
+    if (ex.language === "de" && entry) {
       return segmentSentenceWithArticleHighlights(
         ex.sentence,
         entry.germanGrammar?.word ?? entry.translations.de.primaryText,
@@ -154,7 +57,11 @@
 
   async function runLookup(rawQuery: string) {
     const clean = rawQuery.trim();
-    if (!clean) return;
+    if (!clean) {
+      entry = null;
+      errorMsg = null;
+      return;
+    }
     query = clean;
     errorMsg = null;
     loading = true;
@@ -176,10 +83,15 @@
     const val = (e.target as HTMLInputElement).value;
     query = val;
     if (debounceTimer) clearTimeout(debounceTimer);
-    if (!val.trim()) return;
+    if (!val.trim()) {
+      entry = null;
+      errorMsg = null;
+      loading = false;
+      return;
+    }
     debounceTimer = setTimeout(() => {
       runLookup(val);
-    }, 240);
+    }, 260);
   }
 
   function onSubmit(e: Event) {
@@ -189,6 +101,7 @@
   }
 
   async function saveCurrent() {
+    if (!entry) return;
     try {
       await saveWordToVocab(storage, entry);
       const all = await listVocabItems(storage);
@@ -216,13 +129,22 @@
     }
   }
 
+  async function refreshSavedCount() {
+    try {
+      const all = await listVocabItems(storage);
+      savedCount = all.length;
+    } catch {
+      // ignore
+    }
+  }
+
   onMount(() => {
     searchInputEl?.focus();
 
     (async () => {
       try {
-        const seeded = await seedStarterGermanVocabIfEmpty(storage);
-        savedCount = seeded.length;
+        const items = await purgeStarterVocabOnce(storage);
+        savedCount = items.length;
       } catch {
         // ignore
       }
@@ -244,9 +166,9 @@
     };
   });
 
-  const article = $derived(entry.germanGrammar?.noun?.article);
-  const noun = $derived(entry.germanGrammar?.noun);
-  const verb = $derived(entry.germanGrammar?.verb);
+  const article = $derived(entry?.germanGrammar?.noun?.article);
+  const noun = $derived(entry?.germanGrammar?.noun);
+  const verb = $derived(entry?.germanGrammar?.verb);
 </script>
 
 {#if activeTab === "vocab"}
@@ -273,6 +195,7 @@
       {searchBarAccessory}
       {extensionId}
       embedded={true}
+      onCountChange={(count: number) => (savedCount = count)}
       onOpenWord={(w: string) => {
         activeTab = "dict";
         runLookup(w);
@@ -289,7 +212,14 @@
         <button type="button" class="tab-btn" onclick={() => (activeTab = "dict")}>
           Sözlük
         </button>
-        <button type="button" class="tab-btn" onclick={() => (activeTab = "vocab")}>
+        <button
+          type="button"
+          class="tab-btn"
+          onclick={() => {
+            refreshSavedCount();
+            activeTab = "vocab";
+          }}
+        >
           Kelimelerim ({savedCount})
         </button>
         <button type="button" class="tab-btn is-active" onclick={() => (activeTab = "cards")}>
@@ -341,186 +271,185 @@
       </div>
     </div>
 
-    <!-- QUICK WORD CHIPS -->
-    <div class="quick-bar">
-      {#each QUICK_WORDS as item}
-        <button
-          type="button"
-          class="quick-chip {item.gender ? `quick-chip--${item.gender}` : ''} {query.toLowerCase() === item.label.toLowerCase() ? 'is-selected' : ''}"
-          onclick={() => runLookup(item.label)}
-        >
-          {item.label}
-        </button>
-      {/each}
-    </div>
-
     {#if errorMsg}
       <div class="error-box" role="alert">{errorMsg}</div>
     {/if}
 
-    <!-- WORD HEADER & GRAMMAR SUMMARY CARD -->
-    <section class="word-card {article ? `word-card--${article}` : ''}">
-      <div class="word-header">
-        <div class="word-title-group">
-          <h1 class="word-title">
-            {#if noun}
-              <span class="art-prefix art-prefix--{noun.article}">{noun.article}</span>
-              {noun.singular}
-            {:else if verb}
-              {verb.infinitive}
-            {:else}
-              {entry.translations.de.primaryText}
-            {/if}
-          </h1>
-
-          <div class="word-badges">
-            {#if noun}
-              <span class="badge badge--{noun.article}">
-                {noun.genderLabel}
-              </span>
-              {#if noun.plural}
-                <span class="badge">Çoğul: <strong>{noun.plural}</strong></span>
-              {/if}
-              {#if noun.genitive}
-                <span class="badge">Genitiv: {noun.genitive}</span>
-              {/if}
-            {:else if verb}
-              <span class="badge">Fiil ({verb.auxiliary || "haben"})</span>
-              {#if verb.praesensErSieEs}
-                <span class="badge">er/sie/es: <strong>{verb.praesensErSieEs}</strong></span>
-              {/if}
-              {#if verb.praeteritumIch}
-                <span class="badge">Prät: <strong>{verb.praeteritumIch}</strong></span>
-              {/if}
-              {#if verb.perfekt}
-                <span class="badge">Perfekt: <strong>{verb.perfekt}</strong></span>
-              {/if}
-            {/if}
-
-            {#if entry.germanGrammar?.cefrLevel}
-              <span class="badge">{entry.germanGrammar.cefrLevel}</span>
-            {/if}
-            {#if entry.germanGrammar?.ipa}
-              <span class="badge">/{entry.germanGrammar.ipa}/</span>
-            {/if}
-          </div>
-        </div>
-
-        <div class="word-actions">
-          <button type="button" class="action-btn" onclick={saveCurrent}>
-            {savedToast ? "✓ Kaydedildi" : "★ Kaydet"}
-          </button>
-          <button
-            type="button"
-            class="action-btn"
-            onclick={() =>
-              copyText(
-                `${entry.translations.de.primaryText} — ${entry.translations.en.primaryText} — ${entry.translations.tr.primaryText}`,
-                "main"
-              )}
-          >
-            {copiedKey === "main" ? "✓ Kopyalandı" : "Kopyala"}
-          </button>
-        </div>
+    {#if !entry}
+      <div class="empty-prompt">
+        <p class="empty-title">Çeviri ve artikel bilgisi için bir kelime yazın</p>
+        <p class="empty-sub">
+          Almanca isimlerin <strong>der / die / das</strong> artikellerini, çoğul hallerini, İngilizce ve Türkçe karşılıklarını ve örnek cümleleri anında gösterir.
+        </p>
       </div>
+    {:else}
+      <!-- WORD HEADER & GRAMMAR SUMMARY CARD -->
+      <section class="word-card {article ? `word-card--${article}` : ''}">
+        <div class="word-header">
+          <div class="word-title-group">
+            <h1 class="word-title">
+              {#if noun}
+                <span class="art-prefix art-prefix--{noun.article}">{noun.article}</span>
+                {noun.singular}
+              {:else if verb}
+                {verb.infinitive}
+              {:else}
+                {entry.translations.de.primaryText}
+              {/if}
+            </h1>
 
-      <!-- 3-LANGUAGE TRANSLATION ROW -->
-      <div class="lang-grid">
-        <div class="lang-cell">
-          <div class="lang-label">🇩🇪 ALMANCA</div>
-          <div class="lang-main">{entry.translations.de.primaryText}</div>
-          {#if entry.translations.de.alternatives.length > 0}
-            <div class="lang-alts">
-              {#each entry.translations.de.alternatives.slice(0, 3) as alt}
-                <button type="button" class="alt-tag" onclick={() => runLookup(alt)}>
-                  {alt}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-
-        <div class="lang-cell">
-          <div class="lang-label">🇬🇧 İNGİLİZCE</div>
-          <div class="lang-main">{entry.translations.en.primaryText}</div>
-          {#if entry.translations.en.alternatives.length > 0}
-            <div class="lang-alts">
-              {#each entry.translations.en.alternatives.slice(0, 3) as alt}
-                <button type="button" class="alt-tag" onclick={() => runLookup(alt)}>
-                  {alt}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-
-        <div class="lang-cell">
-          <div class="lang-label">🇹🇷 TÜRKÇE</div>
-          <div class="lang-main">{entry.translations.tr.primaryText}</div>
-          {#if entry.translations.tr.alternatives.length > 0}
-            <div class="lang-alts">
-              {#each entry.translations.tr.alternatives.slice(0, 3) as alt}
-                <button type="button" class="alt-tag" onclick={() => runLookup(alt)}>
-                  {alt}
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      {#if entry.germanGrammar?.grammarTip}
-        <div class="grammar-tip">
-          <span class="tip-label">İpucu:</span> {entry.germanGrammar.grammarTip}
-        </div>
-      {/if}
-    </section>
-
-    <!-- EXAMPLE SENTENCES -->
-    <section class="examples-box">
-      <div class="examples-header">
-        <span class="section-label">ÖRNEK CÜMLELER &amp; ARTİKEL KULLANIMI</span>
-        <div class="legend">
-          <span class="legend-item legend-item--der">der/den/dem</span>
-          <span class="legend-item legend-item--die">die/eine</span>
-          <span class="legend-item legend-item--das">das/ein</span>
-        </div>
-      </div>
-
-      <div class="examples-list">
-        {#each entry.examples.slice(0, 3) as ex (ex.id)}
-          <div class="example-item">
-            <div class="example-content">
-              <p class="example-de">
-                {#each getSegments(ex) as seg}
-                  {#if seg.isArticle}
-                    <span class="hl-{seg.articleGender || article || 'das'}">{seg.text}</span>
-                  {:else if seg.isTargetWord}
-                    <span class="hl-target">{seg.text}</span>
-                  {:else}
-                    {seg.text}
-                  {/if}
-                {/each}
-              </p>
-              <p class="example-tr">
-                🇹🇷 {ex.translationTr}
-                {#if ex.translationEnOrDe}
-                  <span class="example-en"> · 🇬🇧 {ex.translationEnOrDe}</span>
+            <div class="word-badges">
+              {#if noun}
+                <span class="badge badge--{noun.article}">
+                  {noun.genderLabel}
+                </span>
+                {#if noun.plural}
+                  <span class="badge">Çoğul: <strong>{noun.plural}</strong></span>
                 {/if}
-              </p>
+                {#if noun.genitive}
+                  <span class="badge">Genitiv: {noun.genitive}</span>
+                {/if}
+              {:else if verb}
+                <span class="badge">Fiil ({verb.auxiliary || "haben"})</span>
+                {#if verb.praesensErSieEs}
+                  <span class="badge">er/sie/es: <strong>{verb.praesensErSieEs}</strong></span>
+                {/if}
+                {#if verb.praeteritumIch}
+                  <span class="badge">Prät: <strong>{verb.praeteritumIch}</strong></span>
+                {/if}
+                {#if verb.perfekt}
+                  <span class="badge">Perfekt: <strong>{verb.perfekt}</strong></span>
+                {/if}
+              {/if}
+
+              {#if entry.germanGrammar?.cefrLevel}
+                <span class="badge">{entry.germanGrammar.cefrLevel}</span>
+              {/if}
+              {#if entry.germanGrammar?.ipa}
+                <span class="badge">/{entry.germanGrammar.ipa}/</span>
+              {/if}
             </div>
+          </div>
+
+          <div class="word-actions">
+            <button type="button" class="action-btn" onclick={saveCurrent}>
+              {savedToast ? "✓ Kaydedildi" : "★ Kaydet"}
+            </button>
             <button
               type="button"
-              class="copy-mini"
-              onclick={() => copyText(ex.sentence, ex.id)}
-              title="Cümleyi kopyala"
+              class="action-btn"
+              onclick={() =>
+                entry &&
+                copyText(
+                  `${entry.translations.de.primaryText} — ${entry.translations.en.primaryText} — ${entry.translations.tr.primaryText}`,
+                  "main"
+                )}
             >
-              {copiedKey === ex.id ? "✓" : "Kopyala"}
+              {copiedKey === "main" ? "✓ Kopyalandı" : "Kopyala"}
             </button>
           </div>
-        {/each}
-      </div>
-    </section>
+        </div>
+
+        <!-- 3-LANGUAGE TRANSLATION ROW -->
+        <div class="lang-grid">
+          <div class="lang-cell">
+            <div class="lang-label">🇩🇪 ALMANCA</div>
+            <div class="lang-main">{entry.translations.de.primaryText}</div>
+            {#if entry.translations.de.alternatives.length > 0}
+              <div class="lang-alts">
+                {#each entry.translations.de.alternatives.slice(0, 3) as alt}
+                  <button type="button" class="alt-tag" onclick={() => runLookup(alt)}>
+                    {alt}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <div class="lang-cell">
+            <div class="lang-label">🇬🇧 İNGİLİZCE</div>
+            <div class="lang-main">{entry.translations.en.primaryText}</div>
+            {#if entry.translations.en.alternatives.length > 0}
+              <div class="lang-alts">
+                {#each entry.translations.en.alternatives.slice(0, 3) as alt}
+                  <button type="button" class="alt-tag" onclick={() => runLookup(alt)}>
+                    {alt}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+
+          <div class="lang-cell">
+            <div class="lang-label">🇹🇷 TÜRKÇE</div>
+            <div class="lang-main">{entry.translations.tr.primaryText}</div>
+            {#if entry.translations.tr.alternatives.length > 0}
+              <div class="lang-alts">
+                {#each entry.translations.tr.alternatives.slice(0, 3) as alt}
+                  <button type="button" class="alt-tag" onclick={() => runLookup(alt)}>
+                    {alt}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        {#if entry.germanGrammar?.grammarTip}
+          <div class="grammar-tip">
+            <span class="tip-label">İpucu:</span> {entry.germanGrammar.grammarTip}
+          </div>
+        {/if}
+      </section>
+
+      <!-- EXAMPLE SENTENCES -->
+      {#if entry.examples.length > 0}
+        <section class="examples-box">
+          <div class="examples-header">
+            <span class="section-label">ÖRNEK CÜMLELER &amp; ARTİKEL KULLANIMI</span>
+            <div class="legend">
+              <span class="legend-item legend-item--der">der/den/dem</span>
+              <span class="legend-item legend-item--die">die/eine</span>
+              <span class="legend-item legend-item--das">das/ein</span>
+            </div>
+          </div>
+
+          <div class="examples-list">
+            {#each entry.examples.slice(0, 3) as ex (ex.id)}
+              <div class="example-item">
+                <div class="example-content">
+                  <p class="example-de">
+                    {#each getSegments(ex) as seg}
+                      {#if seg.isArticle}
+                        <span class="hl-{seg.articleGender || article || 'das'}">{seg.text}</span>
+                      {:else if seg.isTargetWord}
+                        <span class="hl-target">{seg.text}</span>
+                      {:else}
+                        {seg.text}
+                      {/if}
+                    {/each}
+                  </p>
+                  <p class="example-tr">
+                    🇹🇷 {ex.translationTr}
+                    {#if ex.translationEnOrDe}
+                      <span class="example-en"> · 🇬🇧 {ex.translationEnOrDe}</span>
+                    {/if}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  class="copy-mini"
+                  onclick={() => copyText(ex.sentence, ex.id)}
+                  title="Cümleyi kopyala"
+                >
+                  {copiedKey === ex.id ? "✓" : "Kopyala"}
+                </button>
+              </div>
+            {/each}
+          </div>
+        </section>
+      {/if}
+    {/if}
   </div>
 {/if}
 
@@ -607,38 +536,30 @@
     color: var(--text);
   }
 
-  .quick-bar {
+  .empty-prompt {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 20px;
+    text-align: center;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 6px;
   }
 
-  .quick-chip {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 3px 9px;
+  .empty-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .empty-sub {
+    margin: 0 auto;
+    max-width: 460px;
     font-size: 12px;
     color: var(--text-muted);
-  }
-
-  .quick-chip:hover,
-  .quick-chip.is-selected {
-    background: var(--surface-hover);
-    color: var(--text);
-    border-color: var(--border-strong);
-  }
-
-  .quick-chip--der {
-    border-left: 3px solid var(--der-text);
-  }
-
-  .quick-chip--die {
-    border-left: 3px solid var(--die-text);
-  }
-
-  .quick-chip--das {
-    border-left: 3px solid var(--das-text);
+    line-height: 1.5;
   }
 
   .error-box {
