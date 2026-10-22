@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Polyglot Lexikon">
+  <rect width="64" height="64" fill="#F6F4EE" />
+  <rect x="2" y="2" width="60" height="60" fill="none" stroke="#111110" stroke-width="2" />
+  <!-- Ulm structural gender registration spine: der (Cobalt), die (Vermilion), das (Viridian) -->
+  <rect x="6" y="6" width="6" height="16" fill="#1843A8" />
+  <rect x="6" y="24" width="6" height="16" fill="#A61B3A" />
+  <rect x="6" y="42" width="6" height="16" fill="#0B6144" />
+  <line x1="16" y1="2" x2="16" y2="62" stroke="#111110" stroke-width="1.5" />
+  <!-- Monogram P / L -->
+  <path d="M22 12H36C41.5 12 45 15.2 45 20.5C45 25.8 41.5 29 36 29H28V36H22V12ZM28 17V24H35.2C37.8 24 39.2 22.6 39.2 20.5C39.2 18.4 37.8 17 35.2 17H28Z" fill="#111110" />
+  <path d="M36 34H42V47H54V52H36V34Z" fill="#111110" />
+  <rect x="49" y="12" width="7" height="7" fill="#C83E1D" />
+</svg>

@@ -1,0 +1,184 @@
+/* ==========================================================================
+   POLYGLOT DICTIONARY — COMPACT LAUNCHER UI STYLES
+   Clean, fast, zero-distraction typography & grammar colors for Asyar
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Switzer';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/switzer-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Switzer';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/switzer-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Switzer';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/switzer-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-500-normal.woff2') format('woff2');
+}
+
+:root {
+  --bg: #121316;
+  --surface: #1A1C20;
+  --surface-hover: #22252B;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --text: #F3F4F6;
+  --text-muted: #9CA3AF;
+  --text-subtle: #6B7280;
+  --accent: #3B82F6;
+
+  /* German Article Colors (High legibility on dark launcher surface) */
+  --der-text: #60A5FA;
+  --der-bg: rgba(59, 130, 246, 0.15);
+  --der-border: rgba(96, 165, 250, 0.35);
+
+  --die-text: #F472B6;
+  --die-bg: rgba(244, 114, 182, 0.15);
+  --die-border: rgba(244, 114, 182, 0.35);
+
+  --das-text: #34D399;
+  --das-bg: rgba(52, 211, 153, 0.15);
+  --das-border: rgba(52, 211, 153, 0.35);
+
+  --target-bg: rgba(250, 204, 21, 0.16);
+  --target-text: #FDE047;
+
+  --font-sans: 'Switzer', -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+#app {
+  width: 100%;
+  min-height: 100%;
+}
+
+button,
+input {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Compact Launcher Container */
+.launcher-wrap {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 12px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Article Badges & Inline Sentence Highlights */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+
+.badge--der {
+  color: var(--der-text);
+  background: var(--der-bg);
+  border-color: var(--der-border);
+}
+
+.badge--die {
+  color: var(--die-text);
+  background: var(--die-bg);
+  border-color: var(--die-border);
+}
+
+.badge--das {
+  color: var(--das-text);
+  background: var(--das-bg);
+  border-color: var(--das-border);
+}
+
+.hl-der,
+.hl-die,
+.hl-das,
+.hl-target {
+  display: inline-block;
+  padding: 0 5px;
+  margin: 0 1px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.hl-der {
+  color: var(--der-text);
+  background: var(--der-bg);
+}
+
+.hl-die {
+  color: var(--die-text);
+  background: var(--die-bg);
+}
+
+.hl-das {
+  color: var(--das-text);
+  background: var(--das-bg);
+}
+
+.hl-target {
+  color: var(--target-text);
+  background: var(--target-bg);
+}

@@ -15,6 +15,10 @@ export default defineConfig({
           resolve(__dirname, "manifest.json"),
           resolve(__dirname, "dist/manifest.json")
         );
+        copyFileSync(
+          resolve(__dirname, "dist/view.html"),
+          resolve(__dirname, "dist/index.html")
+        );
       }
     }
   ],
